@@ -1,11 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11'
-            args '-u root'  // évite les problèmes de permissions
-        }
-    }
-
+    agent any
     environment {
         VENV = "venv"
     }
