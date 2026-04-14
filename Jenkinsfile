@@ -1,83 +1,36 @@
 pipeline {
-    agent any
-    environment {
-        VENV = "venv"
-    }
+agent any
+stages {
+stage('Clonage') {
+steps {
+git 'https://github.com/VOTRE_USER/mon_projet.git'
+}
+}
+stage('Build + Tests + Sécurité') {
+steps {
+sh '''
+python3 -m venv venv
+venv/bin/pip install --upgrade pip
+venv/bin/pip install -r requirements.txt
+venv/bin/pytest tests/
+venv/bin/pip install bandit safety
+venv/bin/bandit -r src/ -ll
+venv/bin/safety check
+''' }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Setup Python Environment') {
-            steps {
-                sh '''
-                python -m venv $VENV
-                . $VENV/bin/activate
-                pip install --upgrade pip
-                '''
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                . $VENV/bin/activate
-                pip install -r requirements.txt || true
-                pip install pytest bandit safety
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh '''
-                . $VENV/bin/activate
-                pytest tests/ || true
-                '''
-            }
-        }
-
-        stage('Security Scan - Bandit') {
-            steps {
-                sh '''
-                . $VENV/bin/activate
-                bandit -r . -x tests -ll
-                '''
-            }
-        }
-
-        stage('Dependency Scan - Safety') {
-            steps {
-                sh '''
-                . $VENV/bin/activate
-                safety check || true
-                '''
-            }
-        }
-
-        stage('Run Recon (Test rapide)') {
-            steps {
-                sh '''
-                . $VENV/bin/activate
-                python recon.py example.com --limit 3 || true
-                '''
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Pipeline exécuté avec succès ✅"
-        }
-        failure {
-            echo "Pipeline échoué ❌"
-        }
-        always {
-            sh 'rm -rf $VENV'
-        }
-    }
+}
+stage('Nettoyage') {
+steps {
+sh 'rm -rf venv'
+}
+}
+}
+post {
+success {
+echo "Pipeline exécuté avec succès."
+}
+failure {
+echo "Pipeline échoué"
+}
+}
 }
